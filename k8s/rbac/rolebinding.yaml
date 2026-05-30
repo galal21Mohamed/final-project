@@ -1,0 +1,35 @@
+# ربط Backend Role بـ Backend ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: shopverse-backend-rolebinding
+  namespace: shopverse
+  labels:
+    app: shopverse
+    component: backend
+subjects:
+  - kind: ServiceAccount
+    name: shopverse-backend-sa
+    namespace: shopverse
+roleRef:
+  kind: Role
+  name: shopverse-backend-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# ربط Frontend Role بـ Frontend ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: shopverse-frontend-rolebinding
+  namespace: shopverse
+  labels:
+    app: shopverse
+    component: frontend
+subjects:
+  - kind: ServiceAccount
+    name: shopverse-frontend-sa
+    namespace: shopverse
+roleRef:
+  kind: Role
+  name: shopverse-frontend-role
+  apiGroup: rbac.authorization.k8s.io

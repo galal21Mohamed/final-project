@@ -1,0 +1,153 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shopverse-backend
+  namespace: shopverse
+  labels:
+    app: shopverse
+    component: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: shopverse
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: shopverse
+        component: backend
+    spec:
+      serviceAccountName: shopverse-backend-sa
+
+      # Security Context للـ Pod
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+
+      # PodAntiAffinity - توزيع الـ pods على nodes مختلفة
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: shopverse
+                    component: backend
+                topologyKey: kubernetes.io/hostname
+
+      # InitContainer - التحقق من MySQL قبل تشغيل Backend
+      initContainers:
+        - name: wait-for-mysql
+          image: busybox:1.35
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for MySQL to be ready..."
+              until nc -z shopverse-mysql 3306; do
+                echo "MySQL not ready, waiting 5 seconds..."
+                sleep 5
+              done
+              echo "MySQL is ready!"
+          securityContext:
+            runAsUser: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+
+      containers:
+        - name: backend
+          image: shopverse-backend:v1.0.0
+          imagePullPolicy: Never
+          
+          # Security Context للـ Container
+          securityContext:
+            runAsUser: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+
+          ports:
+            - containerPort: 8080
+              name: http
+
+          # Environment Variables
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: shopverse-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: shopverse-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: shopverse-config
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: shopverse-config
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: shopverse-secret
+                  key: DB_PASSWORD
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: shopverse-secret
+                  key: JWT_SECRET
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: shopverse-config
+                  key: APP_PORT
+            - name: FRONTEND_ORIGIN
+              value: "http://shopverse.local"
+
+          # Resource Limits
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "300m"
+
+          # Startup Probe - وقت إضافي عند البداية
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 12
+
+          # Liveness Probe
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Readiness Probe
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3

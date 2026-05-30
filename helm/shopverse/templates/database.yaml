@@ -1,0 +1,294 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mysql-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: shopverse
+    component: database
+data:
+  primary.cnf: |
+    [mysqld]
+    server-id=1
+    log-bin=mysql-bin
+    binlog-format=ROW
+    binlog-do-db={{ .Values.config.dbName }}
+
+  secondary.cnf: |
+    [mysqld]
+    server-id=2
+    relay-log=mysql-relay-bin
+    log-bin=mysql-bin
+    read-only=1
+
+  setup-primary.sh: |
+    #!/bin/bash
+    echo "Setting up Primary..."
+    until mysqladmin ping -h localhost -uroot -p"${MYSQL_ROOT_PASSWORD}" 2>/dev/null; do
+      echo "Waiting for MySQL..."
+      sleep 2
+    done
+    mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" 2>/dev/null << SQL
+    CREATE USER IF NOT EXISTS 'replicator'@'%' IDENTIFIED BY 'replicator123';
+    GRANT REPLICATION SLAVE ON *.* TO 'replicator'@'%';
+    FLUSH PRIVILEGES;
+    SQL
+    echo "Primary setup complete!"
+
+  setup-secondary.sh: |
+    #!/bin/bash
+    echo "Setting up Secondary..."
+    until mysqladmin ping -h localhost -uroot -p"${MYSQL_ROOT_PASSWORD}" 2>/dev/null; do
+      echo "Waiting for MySQL..."
+      sleep 2
+    done
+    until mysqladmin ping -h shopverse-mysql-primary -uroot -p"${MYSQL_ROOT_PASSWORD}" 2>/dev/null; do
+      echo "Waiting for Primary..."
+      sleep 3
+    done
+    mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" 2>/dev/null << SQL
+    STOP REPLICA;
+    CHANGE REPLICATION SOURCE TO
+      SOURCE_HOST='shopverse-mysql-primary',
+      SOURCE_USER='replicator',
+      SOURCE_PASSWORD='replicator123',
+      SOURCE_AUTO_POSITION=1;
+    START REPLICA;
+    SQL
+    echo "Secondary setup complete!"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shopverse-mysql
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: shopverse
+    component: database
+spec:
+  clusterIP: None
+  selector:
+    app: shopverse
+    component: database
+  ports:
+    - port: 3306
+      targetPort: 3306
+      name: mysql
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shopverse-mysql-primary
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: shopverse
+    component: database
+    role: primary
+spec:
+  selector:
+    app: shopverse
+    component: database
+    statefulset.kubernetes.io/pod-name: shopverse-mysql-0
+  ports:
+    - port: 3306
+      targetPort: 3306
+      name: mysql
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: shopverse-mysql-secondary
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: shopverse
+    component: database
+    role: secondary
+spec:
+  selector:
+    app: shopverse
+    component: database
+    statefulset.kubernetes.io/pod-name: shopverse-mysql-1
+  ports:
+    - port: 3306
+      targetPort: 3306
+      name: mysql
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: shopverse-mysql
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: shopverse
+    component: database
+spec:
+  serviceName: shopverse-mysql
+  replicas: 2
+  selector:
+    matchLabels:
+      app: shopverse
+      component: database
+  template:
+    metadata:
+      labels:
+        app: shopverse
+        component: database
+    spec:
+      serviceAccountName: shopverse-database-sa
+
+      securityContext:
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+
+      initContainers:
+        - name: init-mysql
+          image: mysql:8.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - bash
+            - -c
+            - |
+              POD_INDEX=${HOSTNAME##*-}
+              echo "Pod index: ${POD_INDEX}"
+              if [ "${POD_INDEX}" = "0" ]; then
+                echo "Configuring as PRIMARY..."
+                cp /etc/mysql-config/primary.cnf /etc/mysql-conf.d/override.cnf
+              else
+                echo "Configuring as SECONDARY..."
+                cp /etc/mysql-config/secondary.cnf /etc/mysql-conf.d/override.cnf
+              fi
+              echo "Configuration:"
+              cat /etc/mysql-conf.d/override.cnf
+          securityContext:
+            runAsUser: 999
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: mysql-config
+              mountPath: /etc/mysql-config
+            - name: mysql-conf-d
+              mountPath: /etc/mysql-conf.d
+
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          imagePullPolicy: IfNotPresent
+
+          securityContext:
+            runAsUser: 999
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+
+          ports:
+            - containerPort: 3306
+              name: mysql
+
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: shopverse-secret
+                  key: DB_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: shopverse-config
+                  key: DB_NAME
+            - name: MYSQL_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: shopverse-config
+                  key: DB_USER
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: shopverse-secret
+                  key: DB_PASSWORD
+
+          resources:
+            requests:
+              memory: {{ .Values.database.resources.requests.memory }}
+              cpu: {{ .Values.database.resources.requests.cpu }}
+            limits:
+              memory: {{ .Values.database.resources.limits.memory }}
+              cpu: {{ .Values.database.resources.limits.cpu }}
+
+          startupProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - mysqladmin ping -h localhost -uroot -p"${MYSQL_ROOT_PASSWORD}" 2>/dev/null
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 10
+            failureThreshold: 12
+
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - mysqladmin ping -h localhost -uroot -p"${MYSQL_ROOT_PASSWORD}" 2>/dev/null
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 3
+
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - mysql -h localhost -uroot -p"${MYSQL_ROOT_PASSWORD}" -e "SELECT 1" 2>/dev/null
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 3
+
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+            - name: mysql-conf-d
+              mountPath: /etc/mysql/conf.d
+            - name: mysql-config
+              mountPath: /etc/mysql-config
+            - name: setup-scripts
+              mountPath: /docker-entrypoint-initdb.d
+
+      volumes:
+        - name: mysql-config
+          configMap:
+            name: mysql-config
+            items:
+              - key: primary.cnf
+                path: primary.cnf
+              - key: secondary.cnf
+                path: secondary.cnf
+        - name: mysql-conf-d
+          emptyDir: {}
+        - name: setup-scripts
+          configMap:
+            name: mysql-config
+            defaultMode: 0755
+            items:
+              - key: setup-primary.sh
+                path: setup-primary.sh
+              - key: setup-secondary.sh
+                path: setup-secondary.sh
+
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+        labels:
+          app: shopverse
+          component: database
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: {{ .Values.database.storage.storageClass }}
+        resources:
+          requests:
+            storage: {{ .Values.database.storage.size }}

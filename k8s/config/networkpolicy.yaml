@@ -1,0 +1,130 @@
+# Frontend يقبل فقط من Traefik
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: shopverse-frontend-policy
+  namespace: shopverse
+  labels:
+    app: shopverse
+spec:
+  podSelector:
+    matchLabels:
+      component: frontend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # يقبل من Traefik namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+    # يقبل من داخل نفس الـ namespace
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: shopverse
+  egress:
+    # يتكلم مع Backend
+    - to:
+        - podSelector:
+            matchLabels:
+              component: backend
+      ports:
+        - port: 8080
+    # يسمح بـ DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+---
+# Backend يقبل من Frontend و Traefik
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: shopverse-backend-policy
+  namespace: shopverse
+  labels:
+    app: shopverse
+spec:
+  podSelector:
+    matchLabels:
+      component: backend
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # يقبل من Frontend
+    - from:
+        - podSelector:
+            matchLabels:
+              component: frontend
+      ports:
+        - port: 8080
+    # يقبل من Traefik
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: traefik
+      ports:
+        - port: 8080
+  egress:
+    # يتكلم مع MySQL
+    - to:
+        - podSelector:
+            matchLabels:
+              component: database
+      ports:
+        - port: 3306
+    # يسمح بـ DNS
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP
+---
+# MySQL يقبل من Backend و InitContainer
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: shopverse-database-policy
+  namespace: shopverse
+  labels:
+    app: shopverse
+spec:
+  podSelector:
+    matchLabels:
+      component: database
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # يقبل من Backend
+    - from:
+        - podSelector:
+            matchLabels:
+              component: backend
+      ports:
+        - port: 3306
+    # يقبل من كل pods في نفس الـ namespace
+    # لأن InitContainer يحتاج الوصول
+    - from:
+        - podSelector:
+            matchLabels:
+              app: shopverse
+      ports:
+        - port: 3306
+  egress:
+    # يسمح بـ DNS فقط
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - port: 53
+          protocol: UDP
+        - port: 53
+          protocol: TCP

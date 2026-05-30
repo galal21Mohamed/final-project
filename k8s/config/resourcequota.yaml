@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: shopverse-quota
+  namespace: shopverse
+  labels:
+    app: shopverse
+spec:
+  hard:
+    # عدد الـ pods
+    pods: "20"
+    # عدد الـ services
+    services: "10"
+    # عدد الـ secrets
+    secrets: "10"
+    # عدد الـ configmaps
+    configmaps: "10"
+    # عدد الـ PVCs
+    persistentvolumeclaims: "5"
+    # موارد الـ CPU
+    requests.cpu: "2"
+    limits.cpu: "4"
+    # موارد الـ Memory
+    requests.memory: "1Gi"
+    limits.memory: "2Gi"

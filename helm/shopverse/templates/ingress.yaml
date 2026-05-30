@@ -1,0 +1,26 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: shopverse-ingress
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    app: shopverse
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: PathPrefix(`/api`)
+      kind: Rule
+      services:
+        - name: shopverse-backend
+          port: {{ .Values.backend.port }}
+    - match: PathPrefix(`/health`)
+      kind: Rule
+      services:
+        - name: shopverse-backend
+          port: {{ .Values.backend.port }}
+    - match: PathPrefix(`/`)
+      kind: Rule
+      services:
+        - name: shopverse-frontend
+          port: {{ .Values.frontend.port }}

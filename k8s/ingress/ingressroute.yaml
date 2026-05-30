@@ -1,0 +1,30 @@
+# IngressRoute للـ Frontend و Backend
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: shopverse-ingress
+  namespace: shopverse
+  labels:
+    app: shopverse
+spec:
+  entryPoints:
+    - web
+  routes:
+    # Backend API Routes
+    - match: PathPrefix(`/api`)
+      kind: Rule
+      services:
+        - name: shopverse-backend
+          port: 8080
+    # Health Check
+    - match: PathPrefix(`/health`)
+      kind: Rule
+      services:
+        - name: shopverse-backend
+          port: 8080
+    # Frontend Routes
+    - match: PathPrefix(`/`)
+      kind: Rule
+      services:
+        - name: shopverse-frontend
+          port: 80

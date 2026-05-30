@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shopverse-config
+  namespace: shopverse
+  labels:
+    app: shopverse
+data:
+  # Database Config
+  DB_HOST: "shopverse-mysql"
+  DB_PORT: "3306"
+  DB_NAME: "shopverse"
+  DB_USER: "shopverse"
+  # App Config
+  APP_ENV: "production"
+  APP_PORT: "8080"
+  # Frontend Config
+  FRONTEND_PORT: "80"

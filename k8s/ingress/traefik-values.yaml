@@ -1,0 +1,35 @@
+service:
+  type: NodePort
+
+ports:
+  web:
+    port: 8000
+    exposedPort: 80
+    nodePort: 30080
+  websecure:
+    port: 8443
+    exposedPort: 443
+    nodePort: 30443
+  traefik:
+    port: 9000
+    exposedPort: 9000
+    nodePort: 30090
+
+api:
+  dashboard: true
+  insecure: true
+
+logs:
+  general:
+    level: INFO
+
+metrics:
+  prometheus: null
+
+resources:
+  requests:
+    memory: "128Mi"
+    cpu: "100m"
+  limits:
+    memory: "256Mi"
+    cpu: "200m"

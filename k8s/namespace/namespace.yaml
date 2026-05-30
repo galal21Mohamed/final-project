@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: shopverse
+  labels:
+    name: shopverse
+    environment: production
+    managed-by: kubectl

@@ -1,0 +1,106 @@
+# Global
+global:
+  namespace: shopverse
+  createNamespace: false
+  environment: production
+
+# Backend
+backend:
+  image:
+    repository: shopverse-backend
+    tag: "v1.0.0"
+    pullPolicy: Never
+  replicas: 2
+  port: 8080
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "300m"
+  hpa:
+    minReplicas: 2
+    maxReplicas: 5
+    cpuUtilization: 70
+    memoryUtilization: 80
+
+# Frontend
+frontend:
+  image:
+    repository: shopverse-frontend
+    tag: "v1.0.0"
+    pullPolicy: Never
+  replicas: 2
+  port: 80
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+# Database
+database:
+  image:
+    repository: mysql
+    tag: "8.0"
+    pullPolicy: IfNotPresent
+  port: 3306
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  storage:
+    size: "2Gi"
+    storageClass: "standard"
+
+# Config
+config:
+  dbName: shopverse
+  dbUser: shopverse
+  dbHost: shopverse-mysql-primary
+  dbPort: "3306"
+  appPort: "8080"
+  frontendPort: "80"
+  appEnv: production
+
+# Secrets
+secrets:
+  dbPassword: "c2hvcHZlcnNlMTIz"
+  dbRootPassword: "cm9vdHBhc3N3b3Jk"
+  jwtSecret: "c2hvcHZlcnNlLWp3dC1zZWNyZXQta2V5LTIwMjQ="
+
+# Ingress
+ingress:
+  host: shopverse.local
+
+# Monitoring
+monitoring:
+  image:
+    repository: fluent/fluentd
+    tag: "v1.16-1"
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      memory: "64Mi"
+      cpu: "50m"
+    limits:
+      memory: "128Mi"
+      cpu: "100m"
+
+# ResourceQuota
+resourceQuota:
+  pods: "20"
+  services: "10"
+  secrets: "10"
+  configmaps: "10"
+  pvcs: "5"
+  requestsCpu: "2"
+  limitsCpu: "4"
+  requestsMemory: "1Gi"
+  limitsMemory: "2Gi"

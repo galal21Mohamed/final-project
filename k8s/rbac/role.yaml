@@ -1,0 +1,36 @@
+# Role للـ Backend - يقرأ الـ secrets والـ configmaps فقط
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: shopverse-backend-role
+  namespace: shopverse
+  labels:
+    app: shopverse
+    component: backend
+rules:
+  # قراءة الـ secrets (DB password, JWT secret)
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "list"]
+  # قراءة الـ configmaps (DB host, port, name)
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list"]
+  # قراءة الـ pods (للـ health checks)
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+# Role للـ Frontend - يقرأ الـ configmaps فقط
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: shopverse-frontend-role
+  namespace: shopverse
+  labels:
+    app: shopverse
+    component: frontend
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list"]
