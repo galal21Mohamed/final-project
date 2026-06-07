@@ -64,18 +64,20 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.DOCKERHUB_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          ref: devops
 
       - name: Update image tags in values.yaml
         run: |
           sed -i "s|repository: shopverse-backend|repository: ${{ env.BACKEND_IMAGE }}|g" helm/shopverse/values.yaml
           sed -i "s|repository: shopverse-frontend|repository: ${{ env.FRONTEND_IMAGE }}|g" helm/shopverse/values.yaml
           sed -i "s|tag: \"v1.0.0\"|tag: \"${{ needs.build-and-push.outputs.image_tag }}\"|g" helm/shopverse/values.yaml
+          sed -i "s|tag: \".*\"|tag: \"${{ needs.build-and-push.outputs.image_tag }}\"|g" helm/shopverse/values.yaml
 
       - name: Commit and push changes
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add helm/shopverse/values.yaml
-          git commit -m "ci: update image tags to ${{ needs.build-and-push.outputs.image_tag }}"
+          git diff --staged --quiet || git commit -m "ci: update image tags to ${{ needs.build-and-push.outputs.image_tag }}"
           git push origin devops
