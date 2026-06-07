@@ -7,8 +7,8 @@ global:
 # Backend
 backend:
   image:
-    repository: shopverse-backend
-    tag: "v1.0.0"
+    repository: galalmohamed/shopverse-backend
+    tag: "f4a0242"
     pullPolicy: Never
   replicas: 2
   port: 8080
@@ -28,8 +28,8 @@ backend:
 # Frontend
 frontend:
   image:
-    repository: shopverse-frontend
-    tag: "v1.0.0"
+    repository: galalmohamed/shopverse-frontend
+    tag: "f4a0242"
     pullPolicy: Never
   replicas: 2
   port: 80
@@ -45,7 +45,7 @@ frontend:
 database:
   image:
     repository: mysql
-    tag: "8.0"
+    tag: "f4a0242"
     pullPolicy: IfNotPresent
   port: 3306
   resources:
@@ -83,7 +83,7 @@ ingress:
 monitoring:
   image:
     repository: fluent/fluentd
-    tag: "v1.16-1"
+    tag: "f4a0242"
     pullPolicy: IfNotPresent
   resources:
     requests:
