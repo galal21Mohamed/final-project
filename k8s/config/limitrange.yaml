@@ -7,7 +7,7 @@ metadata:
     app: shopverse
 spec:
   limits:
-    # حدود الـ Container
+    # Container Limits
     - type: Container
       default:
         cpu: "200m"
@@ -21,7 +21,7 @@ spec:
       min:
         cpu: "50m"
         memory: "64Mi"
-    # حدود الـ Pod
+    # Pod Limits
     - type: Pod
       max:
         cpu: "1"
@@ -29,7 +29,7 @@ spec:
       min:
         cpu: "50m"
         memory: "64Mi"
-    # حدود الـ PVC
+    # PVC Limits
     - type: PersistentVolumeClaim
       max:
         storage: "5Gi"

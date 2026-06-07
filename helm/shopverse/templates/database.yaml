@@ -139,8 +139,8 @@ spec:
       serviceAccountName: shopverse-database-sa
 
       securityContext:
-        runAsUser: 999
-        runAsGroup: 999
+        runAsUser: 0
+        runAsGroup: 0
         fsGroup: 999
 
       initContainers:
@@ -163,7 +163,7 @@ spec:
               echo "Configuration:"
               cat /etc/mysql-conf.d/override.cnf
           securityContext:
-            runAsUser: 999
+            runAsUser: 0
             allowPrivilegeEscalation: false
           volumeMounts:
             - name: mysql-config
@@ -177,8 +177,7 @@ spec:
           imagePullPolicy: IfNotPresent
 
           securityContext:
-            runAsUser: 999
-            runAsNonRoot: true
+            runAsUser: 0
             allowPrivilegeEscalation: false
 
           ports:

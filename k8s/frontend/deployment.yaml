@@ -20,7 +20,7 @@ spec:
     spec:
       serviceAccountName: shopverse-frontend-sa
 
-      # Security Context للـ Pod
+      # Security Context for Pod
       securityContext:
         fsGroup: 101
 
@@ -41,8 +41,6 @@ spec:
           image: shopverse-frontend:v1.0.0
           imagePullPolicy: Never
 
-          # Security Context للـ Container
-          # Nginx يحتاج root لبدء التشغيل فقط
           securityContext:
             allowPrivilegeEscalation: false
 

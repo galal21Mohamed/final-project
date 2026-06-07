@@ -20,14 +20,14 @@ spec:
     spec:
       serviceAccountName: shopverse-backend-sa
 
-      # Security Context للـ Pod
+      # Security Context 
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
 
-      # PodAntiAffinity - توزيع الـ pods على nodes مختلفة
+      # PodAntiAffinity 
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -39,7 +39,7 @@ spec:
                     component: backend
                 topologyKey: kubernetes.io/hostname
 
-      # InitContainer - التحقق من MySQL قبل تشغيل Backend
+      # InitContainer 
       initContainers:
         - name: wait-for-mysql
           image: busybox:1.35
@@ -63,7 +63,7 @@ spec:
           image: shopverse-backend:v1.0.0
           imagePullPolicy: Never
           
-          # Security Context للـ Container
+          # Security Context 
           securityContext:
             runAsUser: 1000
             runAsNonRoot: true
@@ -123,7 +123,7 @@ spec:
               memory: "256Mi"
               cpu: "300m"
 
-          # Startup Probe - وقت إضافي عند البداية
+          # Startup Probe 
           startupProbe:
             httpGet:
               path: /health

@@ -21,7 +21,7 @@ spec:
         target:
           type: Utilization
           averageUtilization: 70
-    # Scale بناءً على Memory
+    # Scale Memory
     - type: Resource
       resource:
         name: memory

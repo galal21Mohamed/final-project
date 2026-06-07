@@ -1,4 +1,4 @@
-# Role للـ Backend - يقرأ الـ secrets والـ configmaps فقط
+# Role for Backend - reads secrets and configmaps 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -8,20 +8,20 @@ metadata:
     app: shopverse
     component: backend
 rules:
-  # قراءة الـ secrets (DB password, JWT secret)
+  # reads secrets (DB password, JWT secret)
   - apiGroups: [""]
     resources: ["secrets"]
     verbs: ["get", "list"]
-  # قراءة الـ configmaps (DB host, port, name)
+  # reads configmaps (DB host, port, name)
   - apiGroups: [""]
     resources: ["configmaps"]
     verbs: ["get", "list"]
-  # قراءة الـ pods (للـ health checks)
+  # reads pods (للـ health checks)
   - apiGroups: [""]
     resources: ["pods"]
     verbs: ["get", "list"]
 ---
-# Role للـ Frontend - يقرأ الـ configmaps فقط
+# Role for Frontend -reads configmaps
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:

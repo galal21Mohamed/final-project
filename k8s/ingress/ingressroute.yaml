@@ -1,4 +1,4 @@
-# IngressRoute للـ Frontend و Backend
+# IngressRoute for Frontend and Backend
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:

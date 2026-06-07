@@ -1,4 +1,4 @@
-# Frontend يقبل فقط من Traefik
+# Frontend Traefik
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -14,25 +14,25 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # يقبل من Traefik namespace
+    # Traefik namespace
     - from:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: traefik
-    # يقبل من داخل نفس الـ namespace
+    # namespace
     - from:
         - namespaceSelector:
             matchLabels:
               kubernetes.io/metadata.name: shopverse
   egress:
-    # يتكلم مع Backend
+    # Backend
     - to:
         - podSelector:
             matchLabels:
               component: backend
       ports:
         - port: 8080
-    # يسمح بـ DNS
+    # DNS
     - to:
         - namespaceSelector: {}
       ports:
@@ -41,7 +41,7 @@ spec:
         - port: 53
           protocol: TCP
 ---
-# Backend يقبل من Frontend و Traefik
+# Backend and Frontend Traefik
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -57,14 +57,14 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # يقبل من Frontend
+    # Frontend
     - from:
         - podSelector:
             matchLabels:
               component: frontend
       ports:
         - port: 8080
-    # يقبل من Traefik
+    # Traefik
     - from:
         - namespaceSelector:
             matchLabels:
@@ -72,14 +72,14 @@ spec:
       ports:
         - port: 8080
   egress:
-    # يتكلم مع MySQL
+    # MySQL
     - to:
         - podSelector:
             matchLabels:
               component: database
       ports:
         - port: 3306
-    # يسمح بـ DNS
+    # DNS
     - to:
         - namespaceSelector: {}
       ports:
@@ -88,7 +88,7 @@ spec:
         - port: 53
           protocol: TCP
 ---
-# MySQL يقبل من Backend و InitContainer
+# MySQL Backend InitContainer
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -104,15 +104,13 @@ spec:
     - Ingress
     - Egress
   ingress:
-    # يقبل من Backend
+    # Backend
     - from:
         - podSelector:
             matchLabels:
               component: backend
       ports:
         - port: 3306
-    # يقبل من كل pods في نفس الـ namespace
-    # لأن InitContainer يحتاج الوصول
     - from:
         - podSelector:
             matchLabels:
@@ -120,7 +118,6 @@ spec:
       ports:
         - port: 3306
   egress:
-    # يسمح بـ DNS فقط
     - to:
         - namespaceSelector: {}
       ports:
