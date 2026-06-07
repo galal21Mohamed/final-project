@@ -1,0 +1,81 @@
+name: ShopVerse CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - devops
+    paths:
+      - 'backend/**'
+      - 'frontend/**'
+
+env:
+  DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  BACKEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/shopverse-backend
+  FRONTEND_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/shopverse-frontend
+
+jobs:
+  build-and-push:
+    name: Build and Push Docker Images
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.tag.outputs.tag }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Generate image tag
+        id: tag
+        run: echo "tag=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:${{ steps.tag.outputs.tag }}
+            ${{ env.BACKEND_IMAGE }}:latest
+
+      - name: Build and Push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:${{ steps.tag.outputs.tag }}
+            ${{ env.FRONTEND_IMAGE }}:latest
+
+  update-helm:
+    name: Update Helm Values
+    runs-on: ubuntu-latest
+    needs: build-and-push
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Update image tags in values.yaml
+        run: |
+          sed -i "s|repository: shopverse-backend|repository: ${{ env.BACKEND_IMAGE }}|g" helm/shopverse/values.yaml
+          sed -i "s|repository: shopverse-frontend|repository: ${{ env.FRONTEND_IMAGE }}|g" helm/shopverse/values.yaml
+          sed -i "s|tag: \"v1.0.0\"|tag: \"${{ needs.build-and-push.outputs.image_tag }}\"|g" helm/shopverse/values.yaml
+
+      - name: Commit and push changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add helm/shopverse/values.yaml
+          git commit -m "ci: update image tags to ${{ needs.build-and-push.outputs.image_tag }}"
+          git push origin devops
