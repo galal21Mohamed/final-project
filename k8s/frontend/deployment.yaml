@@ -39,7 +39,7 @@ spec:
       containers:
         - name: frontend
           image: shopverse-frontend:v1.0.0
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
 
           securityContext:
             allowPrivilegeEscalation: false
