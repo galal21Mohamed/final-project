@@ -61,7 +61,7 @@ spec:
       containers:
         - name: backend
           image: shopverse-backend:v1.0.0
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never
           
           # Security Context 
           securityContext:
