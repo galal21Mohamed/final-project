@@ -9,7 +9,7 @@ backend:
   image:
     repository: galalmohamed/shopverse-backend
     tag: "f4a0242"
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   replicas: 2
   port: 8080
   resources:
@@ -30,7 +30,7 @@ frontend:
   image:
     repository: galalmohamed/shopverse-frontend
     tag: "f4a0242"
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   replicas: 2
   port: 80
   resources:
@@ -46,7 +46,7 @@ database:
   image:
     repository: mysql
     tag: "f4a0242"
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   port: 3306
   resources:
     requests:
@@ -84,7 +84,7 @@ monitoring:
   image:
     repository: fluent/fluentd
     tag: "f4a0242"
-    pullPolicy: IfNotPresent
+    pullPolicy: Always
   resources:
     requests:
       memory: "64Mi"
