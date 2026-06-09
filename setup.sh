@@ -29,12 +29,12 @@ echo "✅ Images ready"
 
 kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v3.0.0/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml 2>/dev/null
 helm repo add traefik https://traefik.github.io/charts 2>/dev/null || true
-helm repo update -q
+helm repo update
 kubectl create namespace traefik --dry-run=client -o yaml | kubectl apply -f - 2>/dev/null
-helm upgrade --install traefik traefik/traefik --namespace traefik --values k8s/ingress/traefik-values.yaml --timeout 120s -q
+helm upgrade --install traefik traefik/traefik --namespace traefik --values k8s/ingress/traefik-values.yaml --timeout 120s
 echo "✅ Traefik ready"
 
-helm upgrade --install shopverse helm/shopverse --namespace shopverse --create-namespace -q
+helm upgrade --install shopverse helm/shopverse --namespace shopverse --create-namespace
 echo "✅ ShopVerse installed"
 
 kubectl wait pod shopverse-mysql-0 -n shopverse --for=condition=Ready --timeout=300s
