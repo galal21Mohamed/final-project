@@ -25,6 +25,9 @@ docker build -t shopverse-backend:v1.0.0 backend/ -q
 docker build -t shopverse-frontend:v1.0.0 frontend/ -q
 minikube image load shopverse-backend:v1.0.0 -p shopverse
 minikube image load shopverse-frontend:v1.0.0 -p shopverse
+minikube image load galalmohamed/shopverse-backend:latest -p shopverse 2>/dev/null || true
+minikube image load galalmohamed/shopverse-frontend:latest -p shopverse 2>/dev/null || true
+docker pull fluent/fluentd:v1.16-1 && minikube image load fluent/fluentd:v1.16-1 -p shopverse 2>/dev/null || true
 echo "✅ Images ready"
 
 kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v3.0.0/docs/content/reference/dynamic-configuration/kubernetes-crd-definition-v1.yml 2>/dev/null
