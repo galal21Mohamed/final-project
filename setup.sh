@@ -1,5 +1,8 @@
 cat > setup.sh << 'EOF'
 #!/bin/bash
+
+# Set your GitHub token
+GITHUB_TOKEN="${GITHUB_TOKEN:-your_github_token_here}"
 set -e
 
 echo "╔════════════════════════════════════════╗"
@@ -152,7 +155,7 @@ kubectl exec -n argocd deployment/argocd-server -- \
 kubectl exec -n argocd deployment/argocd-server -- \
   argocd repo add https://github.com/galal21Mohamed/final-project.git \
   --username galal21Mohamed \
-  --password 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 \
+  --password ${GITHUB_TOKEN} \
   --insecure-skip-server-verification 2>/dev/null || true
 
 kubectl exec -n argocd deployment/argocd-server -- \
