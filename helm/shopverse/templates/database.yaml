@@ -42,46 +42,10 @@ data:
       echo "Waiting for MySQL..."
       sleep 2
     done
-
-    # Check if replication already running
-    REPLICA_STATUS=$(mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" \
-      -e "SHOW REPLICA STATUS\G" 2>/dev/null | grep "Replica_IO_Running" | awk '{print $2}')
-    if [ "$REPLICA_STATUS" = "Yes" ]; then
-      echo "Replication already running!"
-      exit 0
-    fi
-
-    # Wait for Primary
     until mysqladmin ping -h shopverse-mysql-primary -uroot -p"${MYSQL_ROOT_PASSWORD}" 2>/dev/null; do
       echo "Waiting for Primary..."
       sleep 3
     done
-
-    # Change auth plugin on Primary
-    mysql -h shopverse-mysql-primary -uroot -p"${MYSQL_ROOT_PASSWORD}" 2>/dev/null << SQL
-    ALTER USER 'replicator'@'%' IDENTIFIED WITH mysql_native_password BY 'replicator123';
-    FLUSH PRIVILEGES;
-SQL
-
-    # Get log position
-    MASTER_LOG=$(mysql -h shopverse-mysql-primary -uroot -p"${MYSQL_ROOT_PASSWORD}" \
-      -e "SHOW MASTER STATUS\G" 2>/dev/null | grep "File:" | awk '{print $2}')
-    MASTER_POS=$(mysql -h shopverse-mysql-primary -uroot -p"${MYSQL_ROOT_PASSWORD}" \
-      -e "SHOW MASTER STATUS\G" 2>/dev/null | grep "Position:" | awk '{print $2}')
-
-    echo "Connecting to Primary: $MASTER_LOG @ $MASTER_POS"
-
-    # Configure Replication
-    mysql -uroot -p"${MYSQL_ROOT_PASSWORD}" 2>/dev/null << SQL
-    STOP REPLICA;
-    CHANGE REPLICATION SOURCE TO
-      SOURCE_HOST='shopverse-mysql-primary',
-      SOURCE_USER='replicator',
-      SOURCE_PASSWORD='replicator123',
-      SOURCE_LOG_FILE='${MASTER_LOG}',
-      SOURCE_LOG_POS=${MASTER_POS};
-    START REPLICA;
-SQL
     echo "Secondary setup complete!"
 ---
 apiVersion: v1
