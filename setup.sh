@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e
 
+# MySQL Config
+MYSQL_ROOT_PASSWORD="${MYSQL_ROOT_PASSWORD:-rootpassword}"
 # GitHub Token - set this before running
 # export GITHUB_TOKEN="your_token_here"
 
